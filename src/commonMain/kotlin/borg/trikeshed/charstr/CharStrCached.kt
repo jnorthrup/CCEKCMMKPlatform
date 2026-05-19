@@ -3,6 +3,7 @@
 package borg.trikeshed.charstr
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.cursor.IOMemento
 import kotlin.concurrent.Volatile
 
 /**
@@ -33,7 +34,7 @@ import kotlin.concurrent.Volatile
  * to keep escape analysis happy and avoid closure allocation.
  */
 class CharStrCached(
-    private val witness: CharSequence,
+    internal val witness: CharSequence,
     private val hotSet: HotTextKSet = HotTextKSet.DEFAULT,
 ) : Join<TextK<*>, (TextK<*>) -> Any?> {
 
@@ -46,6 +47,19 @@ class CharStrCached(
 
     // ── warm cache — identity-keyed map, 1 volatile read + 1 probe ──
     private val warmCache: MutableMap<TextK<*>, Any> = mutableMapOf()
+
+    // ── evidence counts — allocated lazily, computed once ──
+    // null = not yet allocated; sentinel -1 in slot 0 = allocated but not computed
+    @Volatile
+    private var _evidenceCounts: ShortArray? = null
+    internal val evidenceCounts: ShortArray
+        get() {
+            val existing = _evidenceCounts
+            if (existing != null) return existing
+            val arr = ShortArray(16) { -1 }
+            _evidenceCounts = arr
+            return arr
+        }
 
     override val a: TextK<*> get() = TextK.Raw
     override val b: (TextK<*>) -> Any? = { op -> resolve(op) }
@@ -65,6 +79,10 @@ class CharStrCached(
         is TextK.RopeK         -> warmCache.getOrPut(op) { computeRope(op) }
         is TextK.NgramK<*>     -> computeNgram(op)
         is TextK.FingerprintK  -> computeFingerprint(op)
+        is TextK.EvidenceK    -> computeEvidence(op as TextK.EvidenceK)
+        TextK.MaxColumnLength  -> warmCache.getOrPut(op) { computeEvidenceMaxLen() }
+        TextK.MinColumnLength  -> warmCache.getOrPut(op) { computeEvidenceMinLen() }
+        TextK.DeducedIOMemento -> warmCache.getOrPut(op) { deduceIOMemento() }
     }
 
     // ── hot-path implementations ────────────────────────────────
@@ -185,4 +203,133 @@ internal fun computeNgram(op: TextK.NgramK<*>): Any? {
 internal fun computeFingerprint(op: TextK.FingerprintK): Long {
     // SimHash / MinHash — cold path, no cache.
     return 0L
+}
+
+// ── Evidence — single-pass character-class scan ─────────────────
+
+/** Character-class categories, one bit per category. Ordinal determines bit position. */
+enum class CharCategory : BitMasked<Short> {
+    DIGIT,
+    PERIOD,
+    EXPONENT,
+    SIGN,
+    TRUEFALSE,
+    ALPHA,
+    DQUOTE,
+    QUOTE,
+    BACKSLASH,
+    WHITESPACE,
+    SPECIAL;
+
+    override val mask: Short get() = (1 shl ordinal).toShort()
+
+    companion object {
+        /** Pre-computed lookup: each ASCII char → exactly one category mask. */
+        val CHAR_CAT: ShortArray = ShortArray(128) { c ->
+            when (c.toChar()) {
+                in '0'..'9' -> DIGIT.mask
+                '.' -> PERIOD.mask
+                'e', 'E' -> EXPONENT.mask
+                '+', '-' -> SIGN.mask
+                't', 'r', 'u', 'f', 'a', 'l', 's',
+                'T', 'R', 'U', 'F', 'A', 'L', 'S' -> TRUEFALSE.mask
+                in 'a'..'z', in 'A'..'Z' -> ALPHA.mask
+                '"' -> DQUOTE.mask
+                '\'' -> QUOTE.mask
+                '\\' -> BACKSLASH.mask
+                ' ', '\t' -> WHITESPACE.mask
+                else -> SPECIAL.mask
+            }
+        }
+    }
+}
+
+/** Run evidence scan once, cache all counts. */
+internal fun CharStrCached.computeEvidence(op: TextK.EvidenceK): UShort {
+    val w = witness
+    if (evidenceCounts[0] < 0) runEvidenceScan(w)
+    return evidenceCounts[evidenceIndex(op)].toUShort()
+}
+
+private fun CharStrCached.runEvidenceScan(w: CharSequence) {
+    val n = w.length
+    val counts = IntArray(CharCategory.entries.size)
+    val catTable = CharCategory.CHAR_CAT
+    for (i in 0 until n) {
+        val code = w[i].code
+        val mask = if (code < 128) catTable[code] else CharCategory.SPECIAL.mask
+        // mask = 1 shl ordinal → ordinal = trailingZeroBits(mask)
+        val catIdx = mask.toInt().countTrailingZeroBits()
+        if (catIdx < counts.size) counts[catIdx]++
+    }
+    // Store: evidence slots 0-10 = category counts, 11=empty, 12=linefeed
+    evidenceCounts[0]  = counts[0].toShort()   // DIGIT
+    evidenceCounts[1]  = counts[1].toShort()   // PERIOD
+    evidenceCounts[2]  = counts[2].toShort()   // EXPONENT
+    evidenceCounts[3]  = counts[3].toShort()   // SIGN
+    evidenceCounts[4]  = counts[10].toShort()  // SPECIAL
+    evidenceCounts[5]  = counts[5].toShort()   // ALPHA
+    evidenceCounts[6]  = counts[4].toShort()   // TRUEFALSE
+    evidenceCounts[7]  = 0                     // empty
+    evidenceCounts[8]  = counts[7].toShort()   // QUOTE
+    evidenceCounts[9]  = counts[6].toShort()   // DQUOTE
+    evidenceCounts[10] = counts[9].toShort()   // WHITESPACE
+    evidenceCounts[11] = counts[8].toShort()   // BACKSLASH
+    evidenceCounts[12] = 0                     // linefeed
+    evidenceCounts[13] = n.toShort()
+    evidenceCounts[14] = n.toShort()
+}
+
+private fun evidenceIndex(op: TextK.EvidenceK): Int = when (op) {
+    TextK.EvidenceK.Digits      -> 0
+    TextK.EvidenceK.Periods     -> 1
+    TextK.EvidenceK.Exponent    -> 2
+    TextK.EvidenceK.Signs       -> 3
+    TextK.EvidenceK.Special     -> 4
+    TextK.EvidenceK.Alpha       -> 5
+    TextK.EvidenceK.TrueFalse   -> 6
+    TextK.EvidenceK.Empty       -> 7
+    TextK.EvidenceK.Quotes      -> 8
+    TextK.EvidenceK.DQuotes     -> 9
+    TextK.EvidenceK.Whitespaces -> 10
+    TextK.EvidenceK.Backslashes -> 11
+    TextK.EvidenceK.Linefeed    -> 12
+}
+
+internal fun CharStrCached.computeEvidenceMaxLen(): UShort {
+    if (evidenceCounts[0] < 0) runEvidenceScan(witness)
+    return evidenceCounts[13].toUShort()
+}
+
+internal fun CharStrCached.computeEvidenceMinLen(): UShort {
+    if (evidenceCounts[0] < 0) runEvidenceScan(witness)
+    return evidenceCounts[14].toUShort()
+}
+
+internal fun CharStrCached.deduceIOMemento(): IOMemento {
+    if (evidenceCounts[0] < 0) runEvidenceScan(witness)
+    val dquotes = evidenceCounts[9].toInt()
+    val quotes  = evidenceCounts[8].toInt()
+    val empty   = evidenceCounts[7].toInt()
+    val alpha   = evidenceCounts[5].toInt()
+    val tf      = evidenceCounts[6].toInt()
+    val digits  = evidenceCounts[0].toInt()
+    val periods = evidenceCounts[1].toInt()
+    val exp     = evidenceCounts[2].toInt()
+    val signs   = evidenceCounts[3].toInt()
+    val special = evidenceCounts[4].toInt()
+    val maxLen  = evidenceCounts[13].toInt()
+
+    return when {
+        dquotes > 0 || quotes > 0 -> IOMemento.IoString
+        empty > 0 || alpha > 0 -> IOMemento.IoString
+        tf > 0 -> IOMemento.IoBoolean
+        digits == 0 -> IOMemento.IoString
+        periods == 0 && exp == 0 && signs <= 1 && special == 0 && maxLen <= 3 + signs -> IOMemento.IoDouble  // IoByte not in IOMemento
+        periods == 0 && exp == 0 && signs <= 1 && special == 0 && maxLen <= 10 + signs -> IOMemento.IoInt
+        periods == 0 && exp == 0 && signs <= 1 && special == 0 && maxLen <= 19 + signs -> IOMemento.IoLong
+        periods == 1 && exp == 0 && signs <= 1 && special == 0 && maxLen <= 34 + signs -> IOMemento.IoDouble
+        periods <= 1 && exp <= 1 && signs <= 1 && special == 0 && maxLen <= 66 + signs + exp -> IOMemento.IoDouble
+        else -> IOMemento.IoString
+    }
 }

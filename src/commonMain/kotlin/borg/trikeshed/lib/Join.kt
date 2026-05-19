@@ -76,7 +76,7 @@ val <T : Comparable<T>> Series<T>.cpb: CSeries<T>
 // ── Projection (α) ─────────────────────────────────────────────
 
 /** Lazy map / projection over a Series. */
-/*inline*/ infix fun <X, C, Domain >    MetaSeries<Domain,X>.α(/*crossinline*/ xform: (X) -> C): MetaSeries<Domain,C> = a j { i -> xform(this[i]) }
+/*inline*/  infix fun <X, C, Domain >    MetaSeries<Domain,X>.α(/*crossinline*/ xform: (X) -> C): MetaSeries<Domain,C> = a j { i -> xform(this[i]) }
 
 /** Iterable projection. */
 inline infix fun <X, C, Subject : Iterable<X>> Subject.α(crossinline xform: (X) -> C): Iterable<C> =

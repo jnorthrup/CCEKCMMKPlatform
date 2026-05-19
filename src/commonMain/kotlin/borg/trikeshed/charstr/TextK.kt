@@ -1,6 +1,7 @@
 package borg.trikeshed.charstr
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.cursor.IOMemento
 
 /**
  * TextK — GADT-style sealed hierarchy for text facets.
@@ -53,6 +54,43 @@ sealed class TextK<out R> : OpK<R>() {
 
     /** The raw witness — identity TextK, returns the CharSequence itself. */
     data object Raw : TextK<CharSequence>()
+
+    // ── Evidence — character-class counts (single-pass, memoized) ─
+
+    /**
+     * EvidenceK — character-class frequency facets.
+     * Counted in one pass over the witness; all counts memoized together.
+     * Used to deduce the most specific IOMemento for type inference.
+     */
+    sealed class EvidenceK : TextK<UShort>() {
+        data object Digits      : EvidenceK()
+        data object Periods     : EvidenceK()
+        data object Exponent    : EvidenceK()
+        data object Signs       : EvidenceK()
+        data object Special     : EvidenceK()
+        data object Alpha       : EvidenceK()
+        data object TrueFalse   : EvidenceK()
+        data object Empty       : EvidenceK()
+        data object Quotes      : EvidenceK()
+        data object DQuotes     : EvidenceK()
+        data object Whitespaces : EvidenceK()
+        data object Backslashes : EvidenceK()
+        data object Linefeed    : EvidenceK()
+    }
+
+    /** Maximum column length observed — Evidence pass. */
+    data object MaxColumnLength : TextK<UShort>()
+
+    /** Minimum column length observed — Evidence pass. */
+    data object MinColumnLength : TextK<UShort>()
+
+    /**
+     * Deduced IOMemento — computed from EvidenceK counts.
+     * Collapses character-class evidence into the most specific numeric
+     * or structural type (IoByte, IoShort, IoInt, IoLong, IoFloat,
+     * IoDouble, IoBoolean, IoString).
+     */
+    data object DeducedIOMemento : TextK<IOMemento>()
 }
 
 /**

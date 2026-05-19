@@ -27,7 +27,11 @@ fun RowVec.asFaceted(): FacetedRow<ColK<*>> {
                 val idx = (0 until self.a).first { c -> self.b(c).b().name == op.name }
                 self.b(idx).a
             }
-            ColK.Meta       -> self.a j { c: Int -> self.b(c).b() } as Any?
+            ColK.Meta       -> {
+                val s = self.a
+                val fn: (Int) -> ColumnMeta = { c: Int -> self.b(c).b() }
+                (s j fn) as Any?
+            }
             ColK.Width      -> self.a as Any?
         }
     }

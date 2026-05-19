@@ -13,15 +13,12 @@ import borg.trikeshed.lib.*
  * CREATED → OPEN → ACTIVE → DRAINING → CLOSED
  * BitMasked enables O(1) state comparison via isAtLeast/isLessThan.
  */
-enum class ElementState(val mask: UInt) {
+enum class ElementState(override val mask: UInt) : BitMasked<UInt> {
     CREATED(1u shl 0),
     OPEN(1u shl 1),
     ACTIVE(1u shl 2),
     DRAINING(1u shl 3),
     CLOSED(1u shl 4);
-
-    fun isAtLeast(other: ElementState): Boolean = this.ordinal >= other.ordinal
-    fun isLessThan(other: ElementState): Boolean = this.ordinal < other.ordinal
 }
 
 /**
@@ -54,7 +51,7 @@ fun ElementState.canTransitionTo(next: ElementState): Boolean =
 // ── Interest BitMask ────────────────────────────────────────────
 
 /** IO readiness interests — BitMasked<UInt> like ElementState. */
-enum class Interest(val mask: UInt) {
+enum class Interest(override val mask: UInt) : BitMasked<UInt> {
     READ(1u shl 0),
     WRITE(1u shl 1),
     ACCEPT(1u shl 2),

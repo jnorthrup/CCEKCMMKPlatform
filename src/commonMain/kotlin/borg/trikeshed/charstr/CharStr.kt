@@ -19,6 +19,28 @@ typealias CharStr = MetaSeries<TextK<*>, Any?>
 /** Construct a CharStr from a raw CharSequence witness. */
 fun CharStr(seq: CharSequence): CharStr = CharStrCached(seq)
 
+/** Construct a CharStr from a Series<Char> span — lazy, zero-copy.
+ *  The Series<Char> is wrapped as a CharSequence view. */
+fun CharStr(src: Series<Char>, open: Int, closeInclusive: Int): CharStr {
+    val len = closeInclusive - open + 1
+    if (len <= 0) return CharStr("")
+    val witness: CharSequence = object : CharSequence {
+        override val length: Int get() = len
+        override fun get(index: Int): Char = src[open + index]
+        override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+            val newLen = endIndex - startIndex
+            if (newLen <= 0) return ""
+            return CharStr(src, open + startIndex, open + endIndex - 1).let { it[TextK.Raw] as CharSequence }
+        }
+        override fun toString(): String {
+            val ca = CharArray(len)
+            for (i in 0 until len) ca[i] = src[open + i]
+            return ca.concatToString()
+        }
+    }
+    return CharStrCached(witness)
+}
+
 // ── GADT-safe accessors ─────────────────────────────────────────
 
 /** Type-safe dispatch — one unchecked cast at the boundary. */

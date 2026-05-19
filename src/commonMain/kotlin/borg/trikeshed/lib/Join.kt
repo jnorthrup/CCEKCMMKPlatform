@@ -117,3 +117,5 @@ object s_ {
 /** Range selection as composition, not control flow. */
 operator fun <T> Series<T>.get(range: IntRange): Series<T> =
     range.count() j { i -> this[range.first + i] }
+
+

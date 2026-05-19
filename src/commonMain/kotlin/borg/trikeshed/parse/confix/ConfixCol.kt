@@ -49,8 +49,7 @@ val CONFiX_COL_META: Series<ColumnMeta> = 4 j { i: Int ->
 /** Convenience: construct a FacetedRow for one Confix element. */
 fun confixRow(open: Int, close: Int, tag: TypeMemento, children: Cursor): FacetedRow<ConfixCol<*>> =
     ConfixCol.Open j { op: ConfixCol<*> ->
-        @Suppress("UNCHECKED_CAST")
-        when (op) {
+         when (op) {
             ConfixCol.Open     -> open      as Any?
             ConfixCol.Close    -> close     as Any?
             ConfixCol.Tag      -> tag       as Any?
@@ -59,14 +58,11 @@ fun confixRow(open: Int, close: Int, tag: TypeMemento, children: Cursor): Facete
     }
 
 /** Typed accessors for a Confix faceted row. */
-@Suppress("UNCHECKED_CAST")
+
 val FacetedRow<ConfixCol<*>>.open: Int                  get() = b(ConfixCol.Open) as Int
-@Suppress("UNCHECKED_CAST")
-val FacetedRow<ConfixCol<*>>.close: Int                 get() = b(ConfixCol.Close) as Int
-@Suppress("UNCHECKED_CAST")
-val FacetedRow<ConfixCol<*>>.confTag: TypeMemento        get() = b(ConfixCol.Tag) as TypeMemento
-@Suppress("UNCHECKED_CAST")
-val FacetedRow<ConfixCol<*>>.children: Cursor            get() = b(ConfixCol.Children) as Cursor
+ val FacetedRow<ConfixCol<*>>.close: Int                 get() = b(ConfixCol.Close) as Int
+ val FacetedRow<ConfixCol<*>>.confTag: TypeMemento        get() = b(ConfixCol.Tag) as TypeMemento
+ val FacetedRow<ConfixCol<*>>.children: Cursor            get() = b(ConfixCol.Children) as Cursor
 
 /** A Confix fragment = one node in the document DAG. */
 typealias ConfixNode = FacetedRow<ConfixCol<*>>
@@ -152,7 +148,7 @@ typealias ConfixCursor = Cursor
 /** Lift a RowVec into a ConfixNode (faceted access over columnar storage).
  *  Row columns map: 0=open, 1=close, 2=tag, 3=children. */
 fun RowVec.asConfixNode(): ConfixNode = ConfixCol.Open j { op: ConfixCol<*> ->
-    @Suppress("UNCHECKED_CAST")
+
     when (op) {
         ConfixCol.Open     -> this[0].a as Any?
         ConfixCol.Close    -> this[1].a as Any?

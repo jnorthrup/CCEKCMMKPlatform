@@ -29,7 +29,7 @@ fun RowVec.asFaceted(): FacetedRow<ColK<*>> {
             }
             ColK.Meta       -> {
                 val s = self.a
-                val fn: (Int) -> ColumnMeta = { c: Int -> self.b(c).b() }
+                val fn = { c: Int -> self.b(c).b() }  // avoids recursive typealias expansion
                 (s j fn) as Any?
             }
             ColK.Width      -> self.a as Any?

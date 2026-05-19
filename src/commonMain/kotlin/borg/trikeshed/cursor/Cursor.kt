@@ -64,6 +64,7 @@ interface ColumnMeta : Join<CharSequence, Join<TypeMemento, ColumnMeta?>> {
     val child: ColumnMeta? get() = b.b
 
     companion object {
+        @Suppress("EXPOSED_TYPEALIAS_EXPANSION")
         operator fun invoke(name: CharSequence, type: TypeMemento, child: ColumnMeta? = null): ColumnMeta =
             Impl(name, type, child)
     }

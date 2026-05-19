@@ -20,12 +20,12 @@ fun scanJson(src: Series<Char>): ConfixIndex {
 
     data class P(val open: Int, val tag: IOMemento)
 
-    val sOpen = CowSeriesHandle<Int>(CowSeriesBody.of())
-    val sClose = CowSeriesHandle<Int>(CowSeriesBody.of())
-    val sTag = CowSeriesHandle<IOMemento>(CowSeriesBody.of())
+    val sOpen = ChunkedMutableSeries<Int>()
+    val sClose = ChunkedMutableSeries<Int>()
+    val sTag = ChunkedMutableSeries<IOMemento>()
 
     // Stack: COW-backed mutable series, small size so copies are negligible
-    val stack = CowSeriesHandle<P>(CowSeriesBody.of())
+    val stack = ChunkedMutableSeries<P>()
 
     var inQ = false
     var esc = false

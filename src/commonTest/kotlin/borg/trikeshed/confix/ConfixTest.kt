@@ -24,7 +24,7 @@ class ConfixTest {
 
     @Test fun `JSON index  flat number`() {
         val src = charSeries("42")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(1, tags.size)
         assertEquals(IOMemento.IoDouble, tags[0])
@@ -32,7 +32,7 @@ class ConfixTest {
 
     @Test fun `JSON index  string`() {
         val src = charSeries("\"hello\"")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(1, tags.size)
         assertEquals(IOMemento.IoString, tags[0])
@@ -40,7 +40,7 @@ class ConfixTest {
 
     @Test fun `JSON index  empty object`() {
         val src = charSeries("{}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(1, tags.size)
         assertEquals(IOMemento.IoObject, tags[0])
@@ -48,7 +48,7 @@ class ConfixTest {
 
     @Test fun `JSON index  object with one key`() {
         val src = charSeries("{\"key\":\"val\"}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(IOMemento.IoObject, tags[0])
         assertEquals(IOMemento.IoString, tags[1])
@@ -57,47 +57,47 @@ class ConfixTest {
 
     @Test fun `JSON index  array`() {
         val src = charSeries("[1,2,3]")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(IOMemento.IoArray, tags[0])
     }
 
     @Test fun `JSON index  nested object depth`() {
         val src = charSeries("{\"a\":{\"b\":1}}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val depths = ix.depths
         assertEquals(0, depths[0])
     }
 
     @Test fun `JSON index  boolean and null`() {
         val src = charSeries("[true,false,null]")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertEquals(IOMemento.IoArray, tags[0])
     }
 
     @Test fun `direct children  root has two children for object`() {
         val src = charSeries("{\"x\":1,\"y\":2}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val dc = ix.childOf(0)
         assertEquals(4, dc.size)
     }
     @Test fun `direct children  array elements`() {
         val src = charSeries("[10,20,30]")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val dc = ix.childOf(0)
         assertEquals(3, dc.size)
     }
 
     @Test fun `tree cursor  root children`() {
         val src = charSeries("[1,2]")
-        val cursor = JsonScanner.scan(src)
+        val cursor = scan(src)
         assertEquals(1, cursor.size)
     }
 
     @Test fun `path resolve  key lookup by name`() {
         val src = charSeries("{\"name\":\"value\"}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val dc = ix.childOf(0)
         assertEquals(2, dc.size)
     }
@@ -146,7 +146,7 @@ class ConfixTest {
 
     @Test fun `JSON index  deeply nested object`() {
         val src = charSeries("{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":1}}}}}")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertTrue(tags.size >= 10)
     }
@@ -154,7 +154,7 @@ class ConfixTest {
     @Test fun `JSON index  array of 100 numbers`() {
         val nums = (1..100).joinToString(",")
         val src = charSeries("[$nums]")
-        val (_, ix) = JsonScanner.index(src)
+        val (_, ix) = index(src)
         val tags = ix.tags
         assertTrue(tags.size >= 100)
     }

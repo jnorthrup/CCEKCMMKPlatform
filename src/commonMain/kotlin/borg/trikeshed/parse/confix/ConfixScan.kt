@@ -56,10 +56,4 @@ fun scanJson(src: Series<Char>): Join<Cursor, FlatIndex> {
 }
 
 fun scan(src: Series<Char>): Cursor = scanJson(src).a
-
-object JsonScanner {
-    fun scan(src: Series<Char>) = scanJson(src).a
-    fun index(src: Series<Char>) = scanJson(src)
-}
-
-fun scannerFor(syntax: Syntax) = JsonScanner
+fun index(src: Series<Char>) = scanJson(src)

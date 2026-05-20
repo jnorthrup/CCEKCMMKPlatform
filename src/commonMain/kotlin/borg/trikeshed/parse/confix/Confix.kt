@@ -3,12 +3,14 @@ package borg.trikeshed.parse.confix
 import borg.trikeshed.lib.*
 import borg.trikeshed.cursor.*
 
-enum class Syntax { JSON, CBOR, YAML }
-
-fun parse(text: CharSequence, syntax: Syntax = Syntax.JSON): Cursor {
-    val series: Series<Char> = text.toSeries()
-    return scannerFor(syntax).scan(series)
+enum class Syntax(val scan: (Series<Char>) -> Cursor) {
+    JSON({ scanJson(it).a }),
+    CBOR({ scanJson(it).a }),
+    YAML({ scanJson(it).a }),
 }
+
+fun parse(text: CharSequence, syntax: Syntax = Syntax.JSON): Cursor =
+    syntax.scan(text.toSeries())
 
 fun CharSequence.toSeries(): Series<Char> {
     val n = this.length

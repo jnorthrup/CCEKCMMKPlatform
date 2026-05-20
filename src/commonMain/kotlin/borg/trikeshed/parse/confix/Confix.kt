@@ -3,6 +3,8 @@ package borg.trikeshed.parse.confix
 import borg.trikeshed.charstr.CharStr
 import borg.trikeshed.lib.*
 import borg.trikeshed.cursor.*
+interface ConfixLifecycle
+typealias ConfixIndex = FacetedRow<Any>
 
 enum class Syntax {
     JSON {

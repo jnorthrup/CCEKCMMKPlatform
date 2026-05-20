@@ -5,15 +5,15 @@ import borg.trikeshed.cursor.*
 
 enum class Syntax {
     JSON {
-        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun scan(src: Series<Char>): Cursor = scan0(src).a
         override fun recognize(first: Char): Boolean = first == '{' || first == '[' || first == '"'
     },
     CBOR {
-        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun scan(src: Series<Char>): Cursor = scan0(src).a
         override fun recognize(first: Char): Boolean = true
     },
     YAML {
-        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun scan(src: Series<Char>): Cursor = scan0(src).a
         override fun recognize(first: Char): Boolean = first != '{' && first != '['
     };
 

@@ -5,7 +5,7 @@ package borg.trikeshed.parse.confix
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
 
-private val COL_META: Series<`ColumnMeta↻`> = 4 j { c: Int ->
+val COL_META: Series<`ColumnMeta↻`> = 4 j { c: Int ->
     when (c) {
         0 -> ColumnMeta("open", IOMemento.IoInt)
         1 -> ColumnMeta("close", IOMemento.IoInt)
@@ -22,7 +22,7 @@ data class FlatIndex(
     val childOf: (Int) -> Series<Int>,
 )
 
-fun scanJson(src: Series<Char>): Join<Cursor, FlatIndex> {
+fun scan0(src: Series<Char>): Join<Cursor, FlatIndex> {
     val n = src.size
     data class P(val open: Int, val tag: IOMemento)
     val sOpen = ChunkedMutableSeries<Int>()
@@ -55,6 +55,3 @@ fun scanJson(src: Series<Char>): Join<Cursor, FlatIndex> {
     return tree j FlatIndex(spans, tags, depths, childOf)
 }
 
-fun json(src: Series<Char>): Cursor = scanJson(src).a
-fun cbor(src: Series<Char>): Cursor = scanJson(src).a
-fun yaml(src: Series<Char>): Cursor = scanJson(src).a

@@ -55,5 +55,6 @@ fun scanJson(src: Series<Char>): Join<Cursor, FlatIndex> {
     return tree j FlatIndex(spans, tags, depths, childOf)
 }
 
-fun scan(src: Series<Char>): Cursor = scanJson(src).a
-fun index(src: Series<Char>) = scanJson(src)
+fun json(src: Series<Char>): Cursor = scanJson(src).a
+fun cbor(src: Series<Char>): Cursor = scanJson(src).a
+fun yaml(src: Series<Char>): Cursor = scanJson(src).a

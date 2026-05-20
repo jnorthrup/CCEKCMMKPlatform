@@ -3,10 +3,22 @@ package borg.trikeshed.parse.confix
 import borg.trikeshed.lib.*
 import borg.trikeshed.cursor.*
 
-enum class Syntax(val scan: (Series<Char>) -> Cursor) {
-    JSON({ scanJson(it).a }),
-    CBOR({ scanJson(it).a }),
-    YAML({ scanJson(it).a });
+enum class Syntax {
+    JSON {
+        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun recognize(first: Char): Boolean = first == '{' || first == '[' || first == '"'
+    },
+    CBOR {
+        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun recognize(first: Char): Boolean = true
+    },
+    YAML {
+        override fun scan(src: Series<Char>): Cursor = json(src)
+        override fun recognize(first: Char): Boolean = first != '{' && first != '['
+    };
+
+    abstract fun scan(src: Series<Char>): Cursor
+    abstract fun recognize(first: Char): Boolean
 
     companion object {
         fun parse(text: CharSequence, syntax: Syntax = JSON): Cursor =

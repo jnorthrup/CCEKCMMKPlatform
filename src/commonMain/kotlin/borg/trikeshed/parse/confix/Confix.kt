@@ -5,28 +5,28 @@ import borg.trikeshed.cursor.*
 
 enum class Syntax {
     JSON {
-        override fun scan(src: Series<Char>): Cursor = scan0(src).a
-        override fun recognize(first: Char): Boolean = first == '{' || first == '[' || first == '"'
+        override fun scan(src: Series<Byte>): Cursor = scan0(src).a
+        override fun recognize(first: Byte): Boolean = first.toInt().toChar() in setOf('{', '[', '"')
     },
     CBOR {
-        override fun scan(src: Series<Char>): Cursor = scan0(src).a
-        override fun recognize(first: Char): Boolean = true
+        override fun scan(src: Series<Byte>): Cursor = scanCbor(src).a
+        override fun recognize(first: Byte): Boolean = true
     },
     YAML {
-        override fun scan(src: Series<Char>): Cursor = scan0(src).a
-        override fun recognize(first: Char): Boolean = first != '{' && first != '['
+        override fun scan(src: Series<Byte>): Cursor = scan0(src).a
+        override fun recognize(first: Byte): Boolean = first.toInt().toChar() !in setOf('{', '[')
     };
 
-    abstract fun scan(src: Series<Char>): Cursor
-    abstract fun recognize(first: Char): Boolean
+    abstract fun scan(src: Series<Byte>): Cursor
+    abstract fun recognize(first: Byte): Boolean
 
     companion object {
-        fun parse(text: CharSequence, syntax: Syntax = JSON): Cursor =
-            syntax.scan(text.toSeries())
-
-        fun CharSequence.toSeries(): Series<Char> {
-            val n = this.length
-            return n j { i: Int -> this[i] }
+        fun dispatch(bytes: ByteArray): Cursor {
+            val n = bytes.size
+            val src: Series<Byte> = n j { i: Int -> bytes[i] }
+            val first = src[0]
+            val syntax = entries.first { it.recognize(first) }
+            return syntax.scan(src)
         }
     }
 }

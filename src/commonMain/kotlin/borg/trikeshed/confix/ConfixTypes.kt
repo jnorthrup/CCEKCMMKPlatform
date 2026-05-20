@@ -4,6 +4,10 @@ import borg.trikeshed.charstr.CharStr
 import borg.trikeshed.cursor.IOMemento
 import borg.trikeshed.lib.*
 
+enum class Syntax
+interface ConfixLifecycle
+typealias ConfixIndex = FacetedRow<Any>
+
 typealias JsonIndex = MetaSeries<Series<Char>, Join<Series<Twin<Int>>, Series<IOMemento>>>
 typealias Tree = MetaSeries<Join<Series<Twin<Int>>, Series<IOMemento>>, Series2<Int, Join<IOMemento, Series<Int>>>>
 typealias Decoder = MetaSeries<IOMemento, MetaSeries<Series<Char>, MetaSeries<Twin<Int>, Any?>>>

@@ -22,7 +22,7 @@ data class FlatIndex(
     val childOf: (Int) -> Series<Int>,
 )
 
-fun scanJson(src: Series<Char>): Pair<Cursor, FlatIndex> {
+fun scanJson(src: Series<Char>): Join<Cursor, FlatIndex> {
     val n = src.size
     data class P(val open: Int, val tag: IOMemento)
     val sOpen = ChunkedMutableSeries<Int>()
@@ -52,13 +52,13 @@ fun scanJson(src: Series<Char>): Pair<Cursor, FlatIndex> {
     val rc=(0 until total).count{k:Int->depths[k]==0};val ri=IntArray(rc);var rx=0
     for(i in 0 until total)if(depths[i]==0)ri[rx++]=i
     val tree = rc j { k:Int->row(ri[k]) }
-    return tree to FlatIndex(spans, tags, depths, childOf)
+    return tree j FlatIndex(spans, tags, depths, childOf)
 }
 
-fun scan(src: Series<Char>): Cursor = scanJson(src).first
+fun scan(src: Series<Char>): Cursor = scanJson(src).a
 
 object JsonScanner {
-    fun scan(src: Series<Char>) = scanJson(src).first
+    fun scan(src: Series<Char>) = scanJson(src).a
     fun index(src: Series<Char>) = scanJson(src)
 }
 

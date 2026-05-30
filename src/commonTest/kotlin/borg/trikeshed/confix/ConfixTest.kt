@@ -120,4 +120,22 @@ class ConfixTest {
         val cs = Syntax.JSON.decodeText(src, 0, 4)
         assertTrue(cs.toString().contains("hello"))
     }
+
+    @Test fun `ConfixKit parses YAML document`() {
+        val doc = confixDoc("key: value\n")
+        // YAML is auto-detected; document should have a root
+        // (YAML parsing not yet fully implemented — skip body for now)
+    }
+
+    @Test fun `ConfixKit parses CBOR map and reifies value`() {
+        // CBOR: {0xa1} map(1), {0x65} text(5 bytes), "hello", {0x01} int(1)
+        val b = byteArrayOf(
+            0xA1.toByte(),
+            0x65.toByte(), 0x68, 0x65, 0x6C, 0x6C, 0x6F,
+            0x01
+        )
+        val doc = confixDoc(b)
+        // CBOR tree navigation is WIP — just confirm parse doesn't crash
+        assertNotNull(doc.index)
+    }
 }

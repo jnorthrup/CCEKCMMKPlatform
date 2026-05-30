@@ -64,6 +64,20 @@ class CowSeriesHandle<T>(
         observer?.invoke(old j letter)
         versionObserver?.invoke(Twin(oldVer, version))
     }
+
+    /**
+     * Subscribe to copy-on-write snapshots.
+     * @param f  called with Twin(oldLetter, newLetter) on every mutation
+     * @return cancelable subscription — call .cancel() to unsubscribe
+     */
+    fun subscribe(f: (Twin<Series<T>>) -> Unit): () -> Unit {
+        val prior = observer
+        observer = f
+        return { observer = prior }
+    }
+
+    /** Current version number. Increments on every mutation. */
+    fun version(): Long = version
 }
 
 /**

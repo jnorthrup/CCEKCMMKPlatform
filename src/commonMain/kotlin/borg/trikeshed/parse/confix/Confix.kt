@@ -220,4 +220,43 @@ enum class Syntax {
         return sOpen
     }
 
+    // ── scanIndex — wrap scan0 into a ConfixIndex FacetedRow ────────
+
+    fun scanIndex(src: Series<Byte>): ConfixIndex {
+        val (_, flat) = scan0(src)
+        val n = flat.spans.size
+
+        // KeyToChild: scan IoString tokens, map text → token index
+        val keyCache = LinkedHashMap<String, Int>()
+        for (i in 0 until n) {
+            if (flat.tags[i] == IOMemento.IoString) {
+                val s = flat.spans[i]
+                // build key from src bytes (strip quotes for JSON, raw for CBOR)
+                val kOpen = s.a + 1
+                val kClose = s.b - 1
+                if (kClose >= kOpen) {
+                    val key = CharArray(kClose - kOpen + 1) { j ->
+                        src[kOpen + j].toInt().toChar()
+                    }.concatToString()
+                    if (key !in keyCache) keyCache[key] = i
+                }
+            }
+        }
+
+        return n j { op: Any? ->
+            @Suppress("UNCHECKED_CAST")
+            when (op) {
+                ConfixIndexK.Spans          -> flat.spans
+                ConfixIndexK.Tags           -> flat.tags
+                ConfixIndexK.Depths         -> flat.depths
+                ConfixIndexK.DirectChildren -> flat.childOf
+                ConfixIndexK.TreeCursor     -> scan(src)
+                ConfixIndexK.KeyToChild     -> ({ key: CharSequence ->
+                    keyCache[key.toString()]
+                })
+                else                        -> null
+            }
+        }
+    }
+
 }

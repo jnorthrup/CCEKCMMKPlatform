@@ -57,3 +57,4 @@ default/
 /.gradle-local/
 /.gradle-userhome/
 /.hermes/
+/kotlin-js-store/yarn.lock
